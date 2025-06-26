@@ -1,0 +1,12 @@
+﻿
+
+DOWNLOAD savegame.lnk
+UPLOAD savegame.lnk
+
+# exclude logs
+logs/*
+!logs/.autosaveheim_gitkeep
+
+# exclude git stuff
+PortableGit/*
+!PortableGit/.autosaveheim_gitkeep 
