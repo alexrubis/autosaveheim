@@ -13,7 +13,8 @@
     # Path to Valheim installation directory
     $valheimPath = "C:\Program Files (x86)\Steam\steamapps\common\Valheim"  # <-- change if needed
     
-
+    #Do you want to start Valheim  through Steam (with Steam Overlay, etc.) or directly from Valheim.exe? 1 = Steam / 0 = run directly
+    $runFromSteam = 1
 
 
 

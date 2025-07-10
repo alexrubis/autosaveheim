@@ -8,7 +8,11 @@
 # Start logging
 $logPath = Join-Path $PSScriptRoot "logs\setup_log_$(Get-Date -Format 'yyyy-MM-dd_HH-mm-ss').txt"
 Start-Transcript -Path $logPath -Append
-
+Write-Host " ___  _   _  _____   ___   ___  ___ __   __ ___  _  _  ___  ___  __  __ " -ForegroundColor Blue
+Write-Host "/   \| | | ||_   _| / _ \ / __|/   \\ \ / /| __|| || || __||_ _||  \/  |" -ForegroundColor Blue
+Write-Host "| - || |_| |  | |  | (_) |\__ \| - | \   / | _| | __ || _|  | | | |\/| |" -ForegroundColor Blue
+Write-Host "|_|_| \___/   |_|   \___/ |___/|_|_|  \_/  |___||_||_||___||___||_|  |_|" -ForegroundColor Blue
+Write-Host""
 # === Create config file ===
 
 function Install-PortableGit{
@@ -67,8 +71,8 @@ function Resolve-Git {
     sets $git variable to either installed Git or downloaded PortableGit
     #>
 
-    Write-Host "====================================="
-    Write-Host "============RESOLVING GIT INSTALLATION==========="
+    Write-Host "=================================================" -ForegroundColor Blue
+    Write-Host "============RESOLVING GIT INSTALLATION===========" -ForegroundColor Blue
 
     # Try to find git.exe from system PATH
     $git = (Get-Command git  -ErrorAction SilentlyContinue).Source
@@ -106,7 +110,8 @@ function Set-Config {
         [string]$saveName,
         [string]$remoteUrl,
         [string]$worldDir = "C:\Users\$ENV:username\AppData\LocalLow\IronGate\Valheim\worlds_local",
-        [string]$gitUserEmail = "$ENV:username@example.com"
+        [string]$gitUserEmail = "$ENV:username@example.com",
+        [int]$runFromSteam = 1
     )
 
     Write-Host "====================================="
@@ -142,7 +147,8 @@ function Set-Config {
     # Path to Valheim installation directory
     `$valheimPath = "C:\Program Files (x86)\Steam\steamapps\common\Valheim"  # <-- change if needed
     
-
+    # Do you want to start Valheim  through Steam (with Steam Overlay, etc.) or directly from Valheim.exe? 1 = Steam / 0 = run directly
+    `$runFromSteam = $runFromSteam
 
 
 
@@ -162,15 +168,25 @@ function Set-Config {
 Write-Host "=================================================="
 Write-Host "=============== Autosaveheim setup ==============="
 $saveName = Read-Host "Enter your Valheim world save name"
-$remoteUrl = Read-Host "Enter the URL to Github repo wth Personal Access Token (PAT) added - https://{YOUR PAT}@github.com/{GITHUB ACCOUNT NAME}/{REPO NAME}.git"
+$remoteUrl = Read-Host "Enter the URL to Github repo with GitHub's Personal Access Token (PAT) added - https://{YOUR PAT}@github.com/{GITHUB ACCOUNT NAME}/{REPO NAME}.git"
 $gitUserEmail = Read-Host "Enter email for GitHub. Optional, press Enter to skip with default"
+$runFromSteam = Read-Host "Do you want to start Valheim  through Steam (with Steam Overlay, etc.) or directly from Valheim.exe? 1 = Steam / 0 = run directly. Optional, press Enter to skip with default"
+Write-Host "Check config.ps1 file for more settings"
 
-# Call the function with or without email
-if ([string]::IsNullOrWhiteSpace($gitUserEmail)) {
-    Set-Config -saveName $saveName -remoteUrl $remoteUrl
-} else {
-    Set-Config -saveName $saveName -remoteUrl $remoteUrl -gitUserEmail $gitUserEmail
+# Call the function with or without optional args
+# Build parameters dynamically
+$params = @{
+    saveName  = $saveName
+    remoteUrl = $remoteUrl
 }
+if (-not [string]::IsNullOrWhiteSpace($gitUserEmail)) {
+    $params.gitUserEmail = $gitUserEmail
+}
+if (-not [string]::IsNullOrWhiteSpace($runFromSteam)) {
+    $params.runFromSteam = $runFromSteam
+}
+# Call the function with collected params
+Set-Config @params
 
 # Load shared variables
 . "$PSScriptRoot\config.ps1"
