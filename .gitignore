@@ -1,7 +1,7 @@
 ﻿
 
-DOWNLOAD savegame.lnk
-UPLOAD savegame.lnk
+Manual DOWNLOAD savegame.lnk
+Manual UPLOAD savegame.lnk
 
 # exclude logs
 logs/*

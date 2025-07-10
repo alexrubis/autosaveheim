@@ -33,8 +33,8 @@ try {
 }
 
 # Validate files exist
-if (-not (Test-Path "$saveName.db") -or -not (Test-Path "$saveName.fwl")) {
-    [System.Windows.Forms.MessageBox]::Show("Missing save files: $saveName.db or $saveName.fwl", "Pull Save Error", "OK", "Error")
+if (-not (Test-Path "$saveName.db") -or (-not (Test-Path "$saveName.fwl")) -or (-not (Test-Path "whos_hosting.txt"))) {
+    [System.Windows.Forms.MessageBox]::Show("Missing save files: $saveName.db or $saveName.fwl or whos_hosting.txt", "Pull Save Error", "OK", "Error")
     exit 1
 }
 
@@ -55,15 +55,25 @@ Copy-Item "$saveName.fwl" -Destination "$backupDir\$saveName`_before_download_$t
 # === 2. START VALHEIM ===
 Write-Host "=====================================" -ForegroundColor Blue
 Write-Host "===========LAUNCHING VALHEIM==========" -ForegroundColor Blue
+
+# Check if someone else is hosting a game
+$whosHostingDir = Join-Path $worldDir "whos_hosting.txt"
+$hostInfo = Get-Content $whosHostingDir
+if ($hostInfo.Length -gt 0) {
+    Write-Host "Can't start start Valheim as host, $hostInfo is hosting right now!!!" -ForegroundColor Blue
+    [System.Windows.Forms.MessageBox]::Show("Can't start start Valheim as host, $hostInfo is hosting right now!!!", "You can't host a game!", "OK", "Error")
+    exit 1
+}
+
+Write-Host "No one else's hosting. You can start a game as host" -ForegroundColor Blue
+
+$valheimProcess = $null
 switch ($runFromSteam){
 	0 {
 		# Launch Valheim.exe directly
-		#$valheimPath = "C:\Program Files (x86)\Steam\steamapps\common\Valheim"
-		$valheimExec = ".\valheim.exe"
+        $valheimExec = ".\valheim.exe"
 		cd $valheimPath 
 		$valheimProcess = Start-Process -FilePath $valheimExec -PassThru -ArgumentList "-console"
-		$valheimProcess.WaitForExit()
-        Write-Host "Valheim closed."
 	}
 	1 {
 		# Launch Valheim via Steam
@@ -74,10 +84,7 @@ switch ($runFromSteam){
 		while ($elapsedTime -lt $timeoutSeconds){
 			$valheimProcess = Get-Process -Name "valheim" -ErrorAction SilentlyContinue
 			if ($valheimProcess) {
-				Write-Host "Valheim started..." 
-				# Waiting until valheim.exe process exits
-				$valheimProcess.WaitForExit()
-				Write-Host "Valheim closed."
+				Write-Host "Valheim started..."
 				break
 			}
 			
@@ -94,6 +101,35 @@ switch ($runFromSteam){
 		}
 	}
 }
+
+# Waiting until valheim.exe process exits
+$valheimProcess = Get-Process -Name "valheim" -ErrorAction SilentlyContinue
+if ($valheimProcess -ne $null) {
+    Set-Content -Path $whosHostingDir -Value "$ENV:username"
+    & $git -C $worldDir add $whosHostingDir
+    & $git -C $worldDir commit -m "$ENV:username started hosting"
+    & $git -C $worldDir push origin main
+    if ($LASTEXITCODE -ne 0) {
+        Read-Host -Prompt "While changing whos_hosting.txt file, Git failed with exit code $LASTEXITCODE. Press any key to exit"
+        exit $LASTEXITCODE
+    }
+
+    Write-Host "Valheim started."
+
+    $valheimProcess.WaitForExit()
+    Set-Content -Path $whosHostingDir -Value ""
+	& $git -C $worldDir add $whosHostingDir
+    if ($LASTEXITCODE -ne 0) {
+        Read-Host -Prompt "While pushing whos_hosting.txt file to remote, Git failed with exit code $LASTEXITCODE. Press any key to exit"
+        exit $LASTEXITCODE
+    }
+    Write-Host "Valheim closed."
+}
+else {
+    Read-Host -Prompt "Something's wrong with starting Valheim. Quiting. Press any key to exit"
+        exit 1
+}
+
 # === 3. PUSH SAVE ===
 
 # Push save to GitHub

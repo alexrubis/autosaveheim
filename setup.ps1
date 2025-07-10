@@ -197,6 +197,7 @@ $gitignoreContent = @"
 *
 !$saveName.fwl
 !$saveName.db
+!whos_hosting.txt
 "@
 
 # Before initing git repo, backup save files and delete them
