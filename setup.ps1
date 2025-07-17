@@ -275,7 +275,7 @@ New-Shortcut -name "HOST a game" -scriptFile (Join-Path $PSScriptRoot "autosaveh
 New-Shortcut -name "Manual UPLOAD savegame" -scriptFile (Join-Path $PSScriptRoot "upload_save.ps1") -iconDir (Join-Path $PSScriptRoot "icons\upload.ico") -shortcutPath $PSScriptRoot
 New-Shortcut -name "Manual DOWNLOAD savegame" -scriptFile (Join-Path $PSScriptRoot "download_save.ps1") -iconDir (Join-Path $PSScriptRoot "icons\download.ico") -shortcutPath $PSScriptRoot
 
-Write-Host "`n Setup complete!"
+Write-Host "`n Setup complete!" -ForegroundColor Blue
 Read-Host -Prompt "Done. Press Enter to exit"
 
 # End logging
