@@ -79,7 +79,8 @@ switch ($runFromSteam){
 		# Launch Valheim via Steam
 		Start-Process "steam://rungameid/892970"
 		Write-Host "Waiting for Valheim to start..."
-		$timeoutSeconds = 15
+        #Wait some time for Steam to launch Valheim
+		$timeoutSeconds = 30
 		$elapsedTime = 0
 		while ($elapsedTime -lt $timeoutSeconds){
 			$valheimProcess = Get-Process -Name "valheim" -ErrorAction SilentlyContinue
@@ -90,15 +91,52 @@ switch ($runFromSteam){
 			
 			Start-Sleep -Seconds 1
 			$elapsedTime += 1
-			
-			if ($elapsedTime -ge $timeoutSeconds -and -not $valheimProcess) {
-				Write-Host "Valheim didn't start. Terminating script"
-                Write-Host "IF VALHEIM STARTED REGARDLESS THIS MESSAGE, SAVES WHERE NOT UPLOADED. USE MANUAL UPLOAD AND CHECK REMOTE REPO!!!"  -ForegroundColor Red -BackgroundColor White 
-				# End logging
-				Stop-Transcript
-				exit 1
-			}
 		}
+    
+    if (-not $valheimProcess) {
+        # Prompt user to continue waiting or quit
+        $result = [System.Windows.Forms.MessageBox]::Show(
+            "Valheim did not start within $timeoutSeconds seconds.`n`n" +
+            "Click 'Yes' to keep waiting, or 'No' to exit the script.",
+            "Valheim Launch Warning",
+            [System.Windows.Forms.MessageBoxButtons]::YesNo,
+            [System.Windows.Forms.MessageBoxIcon]::Warning
+        )
+
+        if ($result -eq [System.Windows.Forms.DialogResult]::No) {
+            Write-Host "User chose to quit script. Check if you have changes in game save and upload it manualy." -ForegroundColor Red
+            Read-Host -Prompt "Press any key to exit"
+            Stop-Transcript
+            exit 1
+        }
+
+        # Keep checking every 10s and prompt again if still not started
+        do {
+            Start-Sleep -Seconds 10
+            $valheimProcess = Get-Process -Name "valheim" -ErrorAction SilentlyContinue
+
+            if (-not $valheimProcess) {
+                $repeat = [System.Windows.Forms.MessageBox]::Show(
+                    "Valheim is still not running.`n`n" +
+                    "Click 'Yes' to keep waiting, or 'No' to exit.",
+                    "Still Waiting...",
+                    [System.Windows.Forms.MessageBoxButtons]::YesNo,
+                    [System.Windows.Forms.MessageBoxIcon]::Question
+                )
+
+                if ($repeat -eq [System.Windows.Forms.DialogResult]::No) {
+                    Write-Host "User chose to quit script during wait loop. Check if you have changes in game save and upload it manualy." -ForegroundColor Red
+                    Read-Host -Prompt "Press any key to exit"
+                    Stop-Transcript
+                    exit 1
+                }
+            }
+        } while (-not $valheimProcess)
+
+        Write-Host "Valheim finally started after extended wait."
+    }
+
+
 	}
 }
 
@@ -126,7 +164,8 @@ if ($valheimProcess -ne $null) {
     Write-Host "Valheim closed."
 }
 else {
-    Read-Host -Prompt "Something's wrong with starting Valheim. Quiting. Press any key to exit"
+    Write-Host "Something's wrong with starting Valheim."  -ForegroundColor Red -BackgroundColor White 
+    Read-Host -Prompt "Quiting. Press any key to exit"
         exit 1
 }
 

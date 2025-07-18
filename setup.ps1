@@ -111,7 +111,7 @@ function Set-Config {
         [string]$remoteUrl,
         [string]$worldDir = "C:\Users\$ENV:username\AppData\LocalLow\IronGate\Valheim\worlds_local",
         [string]$gitUserEmail = "$ENV:username@example.com",
-        [int]$runFromSteam = 1
+        [int]$runFromSteam = 0
     )
 
     Write-Host "====================================="
