@@ -189,15 +189,6 @@ Set-Config @params
 # Load shared variables
 . "$PSScriptRoot\config.ps1"
 
-# === Create git ignore file ===
-$gitignorePath = Join-Path $worldDir ".gitignore"
-$gitignoreContent = @"
-*
-!$saveName.fwl
-!$saveName.db
-!whos_hosting.txt
-"@
-
 # Before initing git repo, backup save files and delete them
 $backupDir = Join-Path $worldDir "autosaveheim_backups"
 if (-not (Test-Path $backupDir)) {
@@ -220,22 +211,30 @@ foreach ($file in $files) {
         Remove-Item $filePath -Force
     }
 }
+# Remove existing .git folder
+$dotGitPath = Join-Path $worldDir ".git"
+if (Test-Path $dotGitPath) {
+    Remove-Item $dotGitPath  -Recurse -Force
+}
 
+# Create git ignore file
+$gitignorePath = Join-Path $worldDir ".gitignore"
+$gitignoreContent = @"
+*
+!$saveName.fwl
+!$saveName.db
+!whos_hosting.txt
+"@
 
 Set-Content -Path $gitignorePath -Value $gitignoreContent -Encoding UTF8
-Write-Host ".gitignore created at $gitignorePath (only $saveName.fwl and $saveName.db will be tracked)"
+Write-Host ".gitignore created at $gitignorePath (only $saveName.fwl, $saveName.db, whos_hosting.txt will be tracked)"
 
 # === Git Config ===
 # Init Git
 Write-Host " Initializing Git repository in $worldDir..."
-Push-Location $worldDir
-# Remove existing .git folder
-if (Test-Path ".\.git") {
-Remove-Item ".\.git"  -Recurse -Force
-}
-
 Write-Host "============DOWNLOADING SAVEFILES==========="
 
+Push-Location $worldDir
 & $git init
 & $git -C $worldDir config user.name "$ENV:username"
 & $git -C $worldDir config user.email "$gitUserEmail"
