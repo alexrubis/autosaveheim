@@ -70,6 +70,7 @@ function Test-HostingReservation {
     Checks is someone else is already hosting a server by checking if whos_hosting.txt file (pulled from remote) is not empty).
     #>
 
+    & $git pull origin main
     $whosHostingDir = Join-Path $worldDir "whos_hosting.txt"
     $hostInfo = Get-Content $whosHostingDir
     if ($hostInfo.Length -gt 0) {
