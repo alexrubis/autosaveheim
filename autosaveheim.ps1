@@ -53,19 +53,70 @@ Copy-Item "$saveName.fwl" -Destination "$backupDir\$saveName`_before_download_$t
 #Read-Host -Prompt "Done. Press Enter to exit"
 
 # === 2. START VALHEIM ===
-Write-Host "=====================================" -ForegroundColor Blue
-Write-Host "===========LAUNCHING VALHEIM==========" -ForegroundColor Blue
 
-# Check if someone else is hosting a game
-$whosHostingDir = Join-Path $worldDir "whos_hosting.txt"
-$hostInfo = Get-Content $whosHostingDir
-if ($hostInfo.Length -gt 0) {
-    Write-Host "Can't start start Valheim as host, $hostInfo is hosting right now!!!" -ForegroundColor Blue
-    [System.Windows.Forms.MessageBox]::Show("Can't start start Valheim as host, $hostInfo is hosting right now!!!", "You can't host a game!", "OK", "Error")
+Test-HostingReservation {
+    <#
+    .SYNOPSIS
+    Checks is someone else is already hosting a server by checking if whos_hosting.txt file (pulled from remote) is not empty).
+    #>
+
+    $whosHostingDir = Join-Path $worldDir "whos_hosting.txt"
+    $hostInfo = Get-Content $whosHostingDir
+    if ($hostInfo.Length -gt 0) {
+        Write-Host "Can't start start Valheim as host, $hostInfo is hosting right now!!!" -ForegroundColor Blue
+        return $false
+    }
+
+    Write-Host "No one else's hosting. You can start a game as host" -ForegroundColor Blue
+    return $true
+} 
+
+Set-HostingReservation {
+    <#
+    .SYNOPSIS
+    Lock possibility of others to host a server.
+    #>
+    param (
+        [string]$mode
+    )
+
+    if ($mode -eq "lock"){
+        Set-Content -Path $whosHostingDir -Value "$ENV:username"
+        & $git -C $worldDir add $whosHostingDir
+        & $git -C $worldDir commit -m "$ENV:username started hosting"
+        & $git -C $worldDir push origin main
+        if ($LASTEXITCODE -ne 0) {
+            Read-Host -Prompt "While changing whos_hosting.txt file, Git failed with exit code $LASTEXITCODE. Press any key to exit"
+            exit $LASTEXITCODE
+        }
+
+        return
+    }
+    elseif ($mode -eq "unlock") {
+        Set-Content -Path $whosHostingDir -Value ""
+        & $git -C $worldDir add $whosHostingDir
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "While pushing whos_hosting.txt file to remote, Git failed with exit code $LASTEXITCODE"  -ForegroundColor Red -BackgroundColor White
+            Read-Host -Prompt "Press any key to exit"
+            exit $LASTEXITCODE
+        }
+        
+        return
+    }
+
+    throw "Error setting hosting reservation, mode ( $mode )"        
+    Read-Host -Prompt "Press Enter to exit"
     exit 1
 }
 
-Write-Host "No one else's hosting. You can start a game as host" -ForegroundColor Blue
+Write-Host "=====================================" -ForegroundColor Blue
+Write-Host "===========LAUNCHING VALHEIM==========" -ForegroundColor Blue
+
+# Check if someone is hosting a server
+if (-not (Test-HostingReservation)) {
+    [System.Windows.Forms.MessageBox]::Show("Can't start Valheim as host, $hostInfo is hosting right now!!!", "You can't host a game!", "OK", "Error")
+    exit 1
+}
 
 $valheimProcess = $null
 switch ($runFromSteam){
@@ -92,75 +143,71 @@ switch ($runFromSteam){
 			Start-Sleep -Seconds 1
 			$elapsedTime += 1
 		}
-    
-    if (-not $valheimProcess) {
-        # Prompt user to continue waiting or quit
-        $result = [System.Windows.Forms.MessageBox]::Show(
-            "Valheim did not start within $timeoutSeconds seconds.`n`n" +
-            "Click 'Yes' to keep waiting, or 'No' to exit the script.",
-            "Valheim Launch Warning",
-            [System.Windows.Forms.MessageBoxButtons]::YesNo,
-            [System.Windows.Forms.MessageBoxIcon]::Warning
-        )
+        
+        if (-not $valheimProcess) {
+            # Prompt user to continue waiting or quit
+            $result = [System.Windows.Forms.MessageBox]::Show(
+                "Valheim did not start within $timeoutSeconds seconds.`n`n" +
+                "Click 'Yes' to keep waiting, or 'No' to exit the script.",
+                "Valheim Launch Warning",
+                [System.Windows.Forms.MessageBoxButtons]::YesNo,
+                [System.Windows.Forms.MessageBoxIcon]::Warning
+            )
 
-        if ($result -eq [System.Windows.Forms.DialogResult]::No) {
-            Write-Host "User chose to quit script. Check if you have changes in game save and upload it manualy." -ForegroundColor Red
-            Read-Host -Prompt "Press any key to exit"
-            Stop-Transcript
-            exit 1
-        }
-
-        # Keep checking every 10s and prompt again if still not started
-        do {
-            Start-Sleep -Seconds 10
-            $valheimProcess = Get-Process -Name "valheim" -ErrorAction SilentlyContinue
-
-            if (-not $valheimProcess) {
-                $repeat = [System.Windows.Forms.MessageBox]::Show(
-                    "Valheim is still not running.`n`n" +
-                    "Click 'Yes' to keep waiting, or 'No' to exit.",
-                    "Still Waiting...",
-                    [System.Windows.Forms.MessageBoxButtons]::YesNo,
-                    [System.Windows.Forms.MessageBoxIcon]::Question
-                )
-
-                if ($repeat -eq [System.Windows.Forms.DialogResult]::No) {
-                    Write-Host "User chose to quit script during wait loop. Check if you have changes in game save and upload it manualy." -ForegroundColor Red
-                    Read-Host -Prompt "Press any key to exit"
-                    Stop-Transcript
-                    exit 1
-                }
+            if ($result -eq [System.Windows.Forms.DialogResult]::No) {
+                Write-Host "User chose to quit script. Check if you have changes in game save and upload it manualy." -ForegroundColor Red
+                Read-Host -Prompt "Press any key to exit"
+                Stop-Transcript
+                exit 1
             }
-        } while (-not $valheimProcess)
 
-        Write-Host "Valheim finally started after extended wait."
-    }
+            # Keep checking every 10s and prompt again if still not started
+            do {
+                Start-Sleep -Seconds 10
+                $valheimProcess = Get-Process -Name "valheim" -ErrorAction SilentlyContinue
+
+                if (-not $valheimProcess) {
+                    $repeat = [System.Windows.Forms.MessageBox]::Show(
+                        "Valheim is still not running.`n`n" +
+                        "Click 'Yes' to keep waiting, or 'No' to exit.",
+                        "Still Waiting...",
+                        [System.Windows.Forms.MessageBoxButtons]::YesNo,
+                        [System.Windows.Forms.MessageBoxIcon]::Question
+                    )
+
+                    if ($repeat -eq [System.Windows.Forms.DialogResult]::No) {
+                        Write-Host "User chose to quit script during wait loop. Check if you have changes in game save and upload it manualy." -ForegroundColor Red
+                        Read-Host -Prompt "Press any key to exit"
+                        Stop-Transcript
+                        exit 1
+                    }
+                }
+            } while (-not $valheimProcess)
+
+            Write-Host "Valheim finally started after extended wait."
+        }
 
 
 	}
 }
 
-# Waiting until valheim.exe process exits
+
 $valheimProcess = Get-Process -Name "valheim" -ErrorAction SilentlyContinue
-if ($valheimProcess -ne $null) {
-    Set-Content -Path $whosHostingDir -Value "$ENV:username"
-    & $git -C $worldDir add $whosHostingDir
-    & $git -C $worldDir commit -m "$ENV:username started hosting"
-    & $git -C $worldDir push origin main
-    if ($LASTEXITCODE -ne 0) {
-        Read-Host -Prompt "While changing whos_hosting.txt file, Git failed with exit code $LASTEXITCODE. Press any key to exit"
-        exit $LASTEXITCODE
+if ($valheimProcess) {
+    if (-not (Test-HostingReservation)) {
+        [System.Windows.Forms.MessageBox]::Show("Can't start Valheim as host, $hostInfo is hosting right now!!!", "You can't host a game! Closing Valheim.", "OK", "Error")
+        Stop-Process -Id $valheimProcess.Id -Force
+        exit 1
     }
+    
+    Set-HostingReservation -mode "lock"
 
     Write-Host "Valheim started."
 
     $valheimProcess.WaitForExit()
-    Set-Content -Path $whosHostingDir -Value ""
-	& $git -C $worldDir add $whosHostingDir
-    if ($LASTEXITCODE -ne 0) {
-        Read-Host -Prompt "While pushing whos_hosting.txt file to remote, Git failed with exit code $LASTEXITCODE. Press any key to exit"
-        exit $LASTEXITCODE
-    }
+
+    Set-HostingReservation -mode "unlock"
+
     Write-Host "Valheim closed."
 }
 else {
@@ -204,10 +251,14 @@ Copy-Item "$saveName.db" -Destination "$backupDir\$saveName`_before_upload_$time
 Copy-Item "$saveName.fwl" -Destination "$backupDir\$saveName`_before_upload_$timestamp.fwl"
 
 # Add, commit, and push
-& $git add "$saveName.db", "$saveName.fwl"
+& $git add "$saveName.db", "$saveName.fwl", "whos_hosting.txt"
 & $git commit -m "Backup by $env:USERNAME on $timestamp"
 & $git push origin main
-
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "While pushing savefile, Git failed with exit code $LASTEXITCODE"  -ForegroundColor Red -BackgroundColor White
+    Read-Host -Prompt "Press any key to exit"
+    exit $LASTEXITCODE
+}
 Read-Host -Prompt "Script finished. Log created. Press Enter to exit"
 
 # End logging

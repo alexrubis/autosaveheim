@@ -19,7 +19,7 @@
 
 
     # No need to change thoose
-    $gitUserEmail = 'username@example.com'
-    $worldDir = 'C:\Users\$userName\AppData\LocalLow\IronGate\Valheim\worlds_local'
+    $gitUserEmail = "$ENV:username@example.com"
+    $worldDir = "C:\Users\$ENV:username\AppData\LocalLow\IronGate\Valheim\worlds_local"
     # If you have Git installed this line should be auto changed to its path after running setup script, if not scripts will look for PortableGit in autosaveheim folder. Change manuallly if needed.
     $git = 'C:\Program Files\Git\cmd\git.exe'
