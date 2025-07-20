@@ -24,9 +24,8 @@ if (-not $fileExists -or -not $fileHasContent) {
     [System.Windows.Forms.MessageBox]::Show("Config file error. Run SETUP to generate config file", "Pull Save Error", "OK", "Error")
     exit 1
 }
-
-$backupDir = Join-Path $worldDir "autosaveheim_backups"
-$timestamp = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
+# Load shared variables
+. "$PSScriptRoot\config.ps1"
 
 # Go to save directory
 try {
@@ -41,6 +40,9 @@ if (-not (Test-Path "$saveName.db") -or -not (Test-Path "$saveName.fwl")) {
     [System.Windows.Forms.MessageBox]::Show("Missing save files: $saveName.db or $saveName.fwl", "Push Save Error", "OK", "Error")
     exit 1
 }
+
+$backupDir = Join-Path $worldDir "autosaveheim_backups"
+$timestamp = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
 
 # Make sure backup directory exists
 if (-not (Test-Path $backupDir)) {
