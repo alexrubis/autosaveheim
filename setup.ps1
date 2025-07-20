@@ -170,6 +170,7 @@ $remoteUrl = Read-Host "Enter the URL to Github repo with GitHub's Personal Acce
 #$gitUserEmail = Read-Host "Enter email for GitHub. Optional, press Enter to skip with default"
 $runFromSteam = Read-Host "Do you want to start Valheim  through Steam (with Steam Overlay, etc.) or directly from Valheim.exe? 1 = Steam / 0 = run directly. Optional, press Enter to skip with default 0"
 
+# If user skips both saveName and remoteUrl prompts it skips most of the install
 $cleanInstall = -not (
     [string]::IsNullOrWhiteSpace($saveName) -and
     [string]::IsNullOrWhiteSpace($remoteUrl)
