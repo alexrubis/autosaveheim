@@ -55,7 +55,7 @@ Copy-Item "$saveName.fwl" -Destination "$backupDir\$saveName`_before_download_$t
 
 # === 2. START VALHEIM ===
 
-Test-HostingReservation {
+function Test-HostingReservation {
     <#
     .SYNOPSIS
     Checks is someone else is already hosting a server by checking if whos_hosting.txt file (pulled from remote) is not empty).
@@ -72,7 +72,7 @@ Test-HostingReservation {
     return $true
 } 
 
-Set-HostingReservation {
+function Set-HostingReservation {
     <#
     .SYNOPSIS
     Lock possibility of others to host a server.
@@ -80,7 +80,8 @@ Set-HostingReservation {
     param (
         [string]$mode
     )
-
+    
+    $whosHostingDir = Join-Path $worldDir "whos_hosting.txt"
     if ($mode -eq "lock"){
         Set-Content -Path $whosHostingDir -Value "$ENV:username"
         & $git -C $worldDir add $whosHostingDir
