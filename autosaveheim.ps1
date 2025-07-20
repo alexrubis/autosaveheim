@@ -74,7 +74,7 @@ function Test-HostingReservation {
     $hostInfo = Get-Content $whosHostingDir
     if ($hostInfo.Length -gt 0) {
         Write-Host "Can't start start Valheim as host, $hostInfo is hosting right now!!!" -ForegroundColor Blue
-        [System.Windows.Forms.MessageBox]::Show("Can't start Valheim as host, $hostInfo is hosting right now!!!", "You can't host a game!", "OK", "Error")
+        $temp = [System.Windows.Forms.MessageBox]::Show("Can't start Valheim as host, $hostInfo is hosting right now!!!", "You can't host a game!", [System.Windows.Forms.MessageBoxButtons]::OK)
         return $false
     }
 
@@ -134,7 +134,7 @@ switch ($runFromSteam){
 	0 {
 		# Launch Valheim.exe directly
         $valheimExec = ".\valheim.exe"
-		cd $valheimPath 
+		Set-Location $valheimPath 
 		$valheimProcess = Start-Process -FilePath $valheimExec -PassThru -ArgumentList "-console"
 	}
 	1 {
@@ -206,7 +206,7 @@ switch ($runFromSteam){
 $valheimProcess = Get-Process -Name "valheim" -ErrorAction SilentlyContinue
 if ($valheimProcess) {
     if (-not (Test-HostingReservation)) {
-        [System.Windows.Forms.MessageBox]::Show("Can't start Valheim as host, $hostInfo is hosting right now!!!", "You can't host a game! Closing Valheim.", "OK", "Error")
+        $temp = [System.Windows.Forms.MessageBox]::Show("Can't start Valheim as host, $hostInfo is hosting right now!!!", "You can't host a game! Closing Valheim.", "OK", "Error")
         Stop-Process -Id $valheimProcess.Id -Force
         exit 1
     }
