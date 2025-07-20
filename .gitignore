@@ -2,7 +2,7 @@
 
 Manual DOWNLOAD savegame.lnk
 Manual UPLOAD savegame.lnk
-
+config.ps1
 # exclude logs
 logs/*
 !logs/.autosaveheim_gitkeep
