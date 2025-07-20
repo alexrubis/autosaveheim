@@ -15,12 +15,21 @@ Write-Host "| - || |_| |  | |  | (_) |\__ \| - | \   / | _| | __ || _|  | | | |\
 Write-Host "|_|_| \___/   |_|   \___/ |___/|_|_|  \_/  |___||_||_||___||___||_|  |_|" -ForegroundColor Blue
 Write-Host""
 
+# Check if config file exists and is not empty
+$configPath = Join-Path $PSScriptRoot "config.ps1"
+$fileExists = Test-Path $configPath
+$fileHasContent = (Get-Content $configPath -ErrorAction SilentlyContinue | Where-Object { $_.Trim() }).Count -gt 0
+
+if (-not $fileExists -or -not $fileHasContent) {
+    [System.Windows.Forms.MessageBox]::Show("Config file error. Run SETUP to generate config file", "Pull Save Error", "OK", "Error")
+    exit 1
+}
+# Load shared variables
+. "$PSScriptRoot\config.ps1"
 
 # === 1. Pull save from GitHub ===
 Write-Host "=====================================" -ForegroundColor Blue
 Write-Host "===========DOWNLOADING SAVE==========" -ForegroundColor Blue
-# Load shared variables
-. "$PSScriptRoot\config.ps1"
 
 $backupDir = Join-Path $worldDir "autosaveheim_backups"
 $timestamp = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
@@ -202,7 +211,7 @@ if ($valheimProcess) {
         exit 1
     }
     Write-Host "No one else's hosting. You can start a game as host" -ForegroundColor Blue
-    
+
     Set-HostingReservation -mode "lock"
 
     Write-Host "Valheim started."

@@ -9,8 +9,21 @@ Start-Transcript -Path $logPath -Append
 
 Add-Type -AssemblyName System.Windows.Forms
 
-# Load shared variables
-. "$PSScriptRoot\config.ps1"
+Write-Host " ___  _   _  _____   ___   ___  ___ __   __ ___  _  _  ___  ___  __  __ " -ForegroundColor Blue
+Write-Host "/   \| | | ||_   _| / _ \ / __|/   \\ \ / /| __|| || || __||_ _||  \/  |" -ForegroundColor Blue
+Write-Host "| - || |_| |  | |  | (_) |\__ \| - | \   / | _| | __ || _|  | | | |\/| |" -ForegroundColor Blue
+Write-Host "|_|_| \___/   |_|   \___/ |___/|_|_|  \_/  |___||_||_||___||___||_|  |_|" -ForegroundColor Blue
+Write-Host""
+
+# Check if config file exists and is not empty
+$configPath = Join-Path $PSScriptRoot "config.ps1"
+$fileExists = Test-Path $configPath
+$fileHasContent = (Get-Content $configPath -ErrorAction SilentlyContinue | Where-Object { $_.Trim() }).Count -gt 0
+
+if (-not $fileExists -or -not $fileHasContent) {
+    [System.Windows.Forms.MessageBox]::Show("Config file error. Run SETUP to generate config file", "Pull Save Error", "OK", "Error")
+    exit 1
+}
 
 $backupDir = Join-Path $worldDir "autosaveheim_backups"
 $timestamp = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
