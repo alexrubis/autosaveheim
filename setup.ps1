@@ -167,86 +167,97 @@ Write-Host "=================================================="
 Write-Host "=============== Autosaveheim setup ==============="
 $saveName = Read-Host "Enter your Valheim world save name"
 $remoteUrl = Read-Host "Enter the URL to Github repo with GitHub's Personal Access Token (PAT) added - https://{YOUR PAT}@github.com/{GITHUB ACCOUNT NAME}/{REPO NAME}.git"
-$gitUserEmail = Read-Host "Enter email for GitHub. Optional, press Enter to skip with default"
-$runFromSteam = Read-Host "Do you want to start Valheim  through Steam (with Steam Overlay, etc.) or directly from Valheim.exe? 1 = Steam / 0 = run directly. Optional, press Enter to skip with default"
-Write-Host "Check config.ps1 file for more settings"
+#$gitUserEmail = Read-Host "Enter email for GitHub. Optional, press Enter to skip with default"
+$runFromSteam = Read-Host "Do you want to start Valheim  through Steam (with Steam Overlay, etc.) or directly from Valheim.exe? 1 = Steam / 0 = run directly. Optional, press Enter to skip with default 0"
 
-# Call the function with or without optional args
-# Build parameters dynamically
-$params = @{
-    saveName  = $saveName
-    remoteUrl = $remoteUrl
-}
-if (-not [string]::IsNullOrWhiteSpace($gitUserEmail)) {
-    $params.gitUserEmail = $gitUserEmail
-}
-if (-not [string]::IsNullOrWhiteSpace($runFromSteam)) {
-    $params.runFromSteam = $runFromSteam
-}
-# Call the function with collected params
-Set-Config @params
-
-# Load shared variables
-. "$PSScriptRoot\config.ps1"
-
-# Before initing git repo, backup save files and delete them
-$backupDir = Join-Path $worldDir "autosaveheim_backups"
-if (-not (Test-Path $backupDir)) {
-    New-Item -ItemType Directory -Path $backupDir | Out-Null
-}
-
-$files = @(
-    "$saveName.fwl",
-    "$saveName.db",
-    "whos_hosting.txt"
+$cleanInstall = -not (
+    [string]::IsNullOrWhiteSpace($saveName) -and
+    [string]::IsNullOrWhiteSpace($remoteUrl)
 )
-# Process each file
-foreach ($file in $files) {
-    $filePath = Join-Path $worldDir $file
-    if (Test-Path $filePath) {
-        $backupPath = Join-Path $backupDir "setup_backup_$file"
-        if ($file -ne "whos_hosting.txt"){
-            Copy-Item $filePath $backupPath -Force
-        }        
-        Remove-Item $filePath -Force
-    }
-}
-# Remove existing .git folder
-$dotGitPath = Join-Path $worldDir ".git"
-if (Test-Path $dotGitPath) {
-    Remove-Item $dotGitPath  -Recurse -Force
-}
 
-# Create git ignore file
-$gitignorePath = Join-Path $worldDir ".gitignore"
-$gitignoreContent = @"
-*
-!$saveName.fwl
-!$saveName.db
-!whos_hosting.txt
+# Clean Install
+if ($cleanInstall) {
+    Write-Host "Check config.ps1 file for more settings"
+
+    # Call the function with or without optional args
+    # Build parameters dynamically
+    $params = @{
+        saveName  = $saveName
+        remoteUrl = $remoteUrl
+    }
+    #if (-not [string]::IsNullOrWhiteSpace($gitUserEmail)) {
+    #    $params.gitUserEmail = $gitUserEmail
+    #}
+    if (-not [string]::IsNullOrWhiteSpace($runFromSteam)) {
+        $params.runFromSteam = $runFromSteam
+    }
+    # Call the function with collected params
+    Set-Config @params
+
+    # Load shared variables
+    . "$PSScriptRoot\config.ps1"
+
+
+    # Before initing git repo, backup save files and delete them
+    $backupDir = Join-Path $worldDir "autosaveheim_backups"
+    if (-not (Test-Path $backupDir)) {
+        New-Item -ItemType Directory -Path $backupDir | Out-Null
+    }
+
+    $files = @(
+        "$saveName.fwl",
+        "$saveName.db",
+        "whos_hosting.txt"
+    )
+    # Process each file
+    foreach ($file in $files) {
+        $filePath = Join-Path $worldDir $file
+        if (Test-Path $filePath) {
+            $backupPath = Join-Path $backupDir "setup_backup_$file"
+            if ($file -ne "whos_hosting.txt"){
+                Copy-Item $filePath $backupPath -Force
+            }        
+            Remove-Item $filePath -Force
+        }
+    }
+    # Remove existing .git folder
+    $dotGitPath = Join-Path $worldDir ".git"
+    if (Test-Path $dotGitPath) {
+        Remove-Item $dotGitPath  -Recurse -Force
+    }
+
+    # Create git ignore file
+    $gitignorePath = Join-Path $worldDir ".gitignore"
+    $gitignoreContent = 
+@"
+    *
+    !$saveName.fwl
+    !$saveName.db
+    !whos_hosting.txt
 "@
 
-Set-Content -Path $gitignorePath -Value $gitignoreContent -Encoding UTF8
-Write-Host ".gitignore created at $gitignorePath (only $saveName.fwl, $saveName.db, whos_hosting.txt will be tracked)"
+    Set-Content -Path $gitignorePath -Value $gitignoreContent -Encoding UTF8
+    Write-Host ".gitignore created at $gitignorePath (only $saveName.fwl, $saveName.db, whos_hosting.txt will be tracked)"
 
-# === Git Config ===
-# Init Git
-Write-Host " Initializing Git repository in $worldDir..."
-Write-Host "============DOWNLOADING SAVEFILES==========="
+    # === Git Config ===
+    # Init Git
+    Write-Host " Initializing Git repository in $worldDir..."
+    Write-Host "============DOWNLOADING SAVEFILES==========="
 
-Push-Location $worldDir
-& $git init
-& $git -C $worldDir config user.name "$ENV:username"
-& $git -C $worldDir config user.email "$gitUserEmail"
-& $git -C $worldDir config credential.helper store
-& $git remote add origin $remoteUrl
-& $git branch -M main
-& $git pull origin main --rebase
-if ($LASTEXITCODE -ne 0) {
-    Read-Host -Prompt "Git failed with exit code $LASTEXITCODE. Press any key to exit"
-    exit $LASTEXITCODE
+    Push-Location $worldDir
+    & $git init
+    & $git -C $worldDir config user.name "$ENV:username"
+    & $git -C $worldDir config user.email "$gitUserEmail"
+    & $git -C $worldDir config credential.helper store
+    & $git remote add origin $remoteUrl
+    & $git branch -M main
+    & $git pull origin main --rebase
+    if ($LASTEXITCODE -ne 0) {
+        Read-Host -Prompt "Git failed with exit code $LASTEXITCODE. Press any key to exit"
+        exit $LASTEXITCODE
+    }
+    Pop-Location
 }
-Pop-Location
 
 # === Create Shortcuts ===
 function New-Shortcut {
