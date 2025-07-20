@@ -69,7 +69,6 @@ function Test-HostingReservation {
         return $false
     }
 
-    Write-Host "No one else's hosting. You can start a game as host" -ForegroundColor Blue
     return $true
 } 
 
@@ -202,6 +201,7 @@ if ($valheimProcess) {
         Stop-Process -Id $valheimProcess.Id -Force
         exit 1
     }
+    Write-Host "No one else's hosting. You can start a game as host" -ForegroundColor Blue
     
     Set-HostingReservation -mode "lock"
 
