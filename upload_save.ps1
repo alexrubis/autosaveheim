@@ -54,7 +54,7 @@ Copy-Item "$saveName.db" -Destination "$backupDir\$saveName`_before_upload_$time
 Copy-Item "$saveName.fwl" -Destination "$backupDir\$saveName`_before_upload_$timestamp.fwl"
 
 # Add, commit, and push
-& $git add "$saveName.db", "$saveName.fwl"
+& $git add .
 & $git commit -m "Backup by $env:USERNAME on $timestamp"
 & $git push origin main
 
