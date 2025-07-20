@@ -65,6 +65,7 @@ function Test-HostingReservation {
     $hostInfo = Get-Content $whosHostingDir
     if ($hostInfo.Length -gt 0) {
         Write-Host "Can't start start Valheim as host, $hostInfo is hosting right now!!!" -ForegroundColor Blue
+        [System.Windows.Forms.MessageBox]::Show("Can't start Valheim as host, $hostInfo is hosting right now!!!", "You can't host a game!", "OK", "Error")
         return $false
     }
 
@@ -80,7 +81,7 @@ function Set-HostingReservation {
     param (
         [string]$mode
     )
-    
+
     $whosHostingDir = Join-Path $worldDir "whos_hosting.txt"
     if ($mode -eq "lock"){
         Set-Content -Path $whosHostingDir -Value "$ENV:username"
@@ -116,7 +117,7 @@ Write-Host "===========LAUNCHING VALHEIM==========" -ForegroundColor Blue
 
 # Check if someone is hosting a server
 if (-not (Test-HostingReservation)) {
-    [System.Windows.Forms.MessageBox]::Show("Can't start Valheim as host, $hostInfo is hosting right now!!!", "You can't host a game!", "OK", "Error")
+    Read-Host -Prompt "Press any key to exit"
     exit 1
 }
 
