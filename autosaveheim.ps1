@@ -159,7 +159,7 @@ switch ($runFromSteam){
             # Prompt user to continue waiting or quit
             $result = [System.Windows.Forms.MessageBox]::Show(
                 "Valheim did not start within $timeoutSeconds seconds.`n`n" +
-                "Click 'Yes' to keep waiting, or 'No' to exit the script.",
+                "Click 'Yes' to keep waiting, or 'No' to exit the script. If you click exit but Valheim will start, the savefiles won't be autosynced!!!",
                 "Valheim Launch Warning",
                 [System.Windows.Forms.MessageBoxButtons]::YesNo,
                 [System.Windows.Forms.MessageBoxIcon]::Warning
@@ -180,7 +180,7 @@ switch ($runFromSteam){
                 if (-not $valheimProcess) {
                     $repeat = [System.Windows.Forms.MessageBox]::Show(
                         "Valheim is still not running.`n`n" +
-                        "Click 'Yes' to keep waiting, or 'No' to exit.",
+                        "Click 'Yes' to keep waiting, or 'No' to exit. If you click exit but Valheim will start, the savefiles won't be autosynced!!!",
                         "Still Waiting...",
                         [System.Windows.Forms.MessageBoxButtons]::YesNo,
                         [System.Windows.Forms.MessageBoxIcon]::Question
