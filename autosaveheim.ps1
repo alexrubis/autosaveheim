@@ -1,6 +1,7 @@
 # ====================
 # Autosaveheim / Downloads newest save from github repo, starts Valheim, after quiting Valheim uploads save to GH repo.
 # ====================
+$ErrorActionPreference = "Stop"
 
 # Start logging PowerShell output
 $logPath = Join-Path $PSScriptRoot "logs\autosaveheim_log_$(Get-Date -Format 'yyyy-MM-dd_HH-mm-ss').txt"

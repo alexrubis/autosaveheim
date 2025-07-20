@@ -1,6 +1,7 @@
 # ====================
 # Manual Push save to GitHub
 # ====================
+$ErrorActionPreference = "Stop"
 
 # Start logging
 $logPath = Join-Path $PSScriptRoot "logs\upload_log_$(Get-Date -Format 'yyyy-MM-dd_HH-mm-ss').txt"

@@ -1,10 +1,8 @@
 # ====================
 # Setup everything
 # ====================
+$ErrorActionPreference = "Stop"
 
-# Stop the script when a cmdlet or a native command fails
-#$ErrorActionPreference = 'Stop'
-#$PSNativeCommandUseErrorActionPreference = $true
 # Start logging
 $logPath = Join-Path $PSScriptRoot "logs\setup_log_$(Get-Date -Format 'yyyy-MM-dd_HH-mm-ss').txt"
 Start-Transcript -Path $logPath -Append
@@ -264,7 +262,7 @@ function New-Shortcut {
     $shell = New-Object -ComObject WScript.Shell
     $shortcut = $shell.CreateShortcut((Join-Path $shortcutPath "$name.lnk"))
     $shortcut.TargetPath = "powershell.exe"
-    $shortcut.Arguments = "-ExecutionPolicy Bypass -File `"$scriptFile`""
+    $shortcut.Arguments = "-NoExit -ExecutionPolicy Bypass -File `"$scriptFile`""
     $shortcut.WorkingDirectory = $PSScriptRoot
 	$shortcut.IconLocation = $iconDir
     $shortcut.Save()
