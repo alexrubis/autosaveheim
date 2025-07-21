@@ -64,10 +64,18 @@ Copy-Item "$saveName.fwl" -Destination "$backupDir\$saveName`_before_download_$t
 
 # === 2. START VALHEIM ===
 
+function Stop-Valheim {
+    $valheimProcess = Get-Process -Name "valheim" -ErrorAction SilentlyContinue
+    if ($valheimProcess) {
+        Stop-Process -Id $valheimProcess.Id -Force
+    }    
+}
+
 function Test-HostingReservation {
     <#
     .SYNOPSIS
     Checks is someone else is already hosting a server by checking if whos_hosting.txt file (pulled from remote) is not empty).
+    If file is empty -> free to host, if it contains text (another user's name) you can't host.
     #>
 
     & $git pull origin main
@@ -76,6 +84,8 @@ function Test-HostingReservation {
     if ($hostInfo.Length -gt 0) {
         Write-Host "Can't start start Valheim as host, $hostInfo is hosting right now!!!" -ForegroundColor Blue
         $temp = [System.Windows.Forms.MessageBox]::Show("Can't start Valheim as host, $hostInfo is hosting right now!!!", "You can't host a game!", [System.Windows.Forms.MessageBoxButtons]::OK)
+        # If in situation that Valheim has been started despite someone else hosting , kill the process
+        Stop-Valheim
         return $false
     }
 
@@ -85,13 +95,16 @@ function Test-HostingReservation {
 function Set-HostingReservation {
     <#
     .SYNOPSIS
-    Lock possibility of others to host a server.
+    Lock or unlock possibility of others to host a server.
+    Writes your username to whos_hosting.txt file to lock and erases file content to unlock.
+    -mode 'lock' / 'unlock'
     #>
     param (
         [string]$mode
     )
 
     $whosHostingDir = Join-Path $worldDir "whos_hosting.txt"
+
     if ($mode -eq "lock"){
         Set-Content -Path $whosHostingDir -Value "$ENV:username"
         & $git -C $worldDir add $whosHostingDir
@@ -148,12 +161,17 @@ switch ($runFromSteam){
 		while ($elapsedTime -lt $timeoutSeconds){
 			$valheimProcess = Get-Process -Name "valheim" -ErrorAction SilentlyContinue
 			if ($valheimProcess) {
+                # Check if someone is hosting a server
+                if (-not (Test-HostingReservation)) {
+                    Read-Host -Prompt "Press any key to exit."
+                    exit 1
+                }
 				Write-Host "Valheim started..."
 				break
 			}
 			
-			Start-Sleep -Seconds 1
-			$elapsedTime += 1
+			Start-Sleep -Seconds 5
+			$elapsedTime += 5
 		}
         
         if (-not $valheimProcess) {
@@ -167,6 +185,7 @@ switch ($runFromSteam){
             )
 
             if ($result -eq [System.Windows.Forms.DialogResult]::No) {
+                Stop-Valheim
                 Write-Host "User chose to quit script. Check if you have changes in game save and upload it manualy." -ForegroundColor Red
                 Read-Host -Prompt "Press any key to exit"
                 Stop-Transcript
@@ -188,6 +207,7 @@ switch ($runFromSteam){
                     )
 
                     if ($repeat -eq [System.Windows.Forms.DialogResult]::No) {
+                        Stop-Valheim
                         Write-Host "User chose to quit script during wait loop. Check if you have changes in game save and upload it manualy." -ForegroundColor Red
                         Read-Host -Prompt "Press any key to exit"
                         Stop-Transcript
@@ -198,8 +218,6 @@ switch ($runFromSteam){
 
             Write-Host "Valheim finally started after extended wait."
         }
-
-
 	}
 }
 
@@ -207,8 +225,8 @@ switch ($runFromSteam){
 $valheimProcess = Get-Process -Name "valheim" -ErrorAction SilentlyContinue
 if ($valheimProcess) {
     if (-not (Test-HostingReservation)) {
+        Stop-Valheim
         $temp = [System.Windows.Forms.MessageBox]::Show("Can't start Valheim as host, $hostInfo is hosting right now!!!", "You can't host a game! Closing Valheim.", "OK", "Error")
-        Stop-Process -Id $valheimProcess.Id -Force
         exit 1
     }
     Write-Host "No one else's hosting. You can start a game as host" -ForegroundColor Blue
