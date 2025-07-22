@@ -78,12 +78,13 @@ function Test-HostingReservation {
     If file is empty -> free to host, if it contains text (another user's name) you can't host.
     #>
 
-    & $git pull origin main
+    $gitOutput = & $git -C $worldDir pull origin main
+    Write-Host $gitOutput
     $whosHostingDir = Join-Path $worldDir "whos_hosting.txt"
     $hostInfo = Get-Content $whosHostingDir
     if ($hostInfo.Length -gt 0) {
         Write-Host "Can't start start Valheim as host, $hostInfo is hosting right now!!!" -ForegroundColor Blue
-        $temp = [System.Windows.Forms.MessageBox]::Show("Can't start Valheim as host, $hostInfo is hosting right now!!!", "You can't host a game!", [System.Windows.Forms.MessageBoxButtons]::OK)
+        $temp = [System.Windows.Forms.MessageBox]::Show("Can't start Valheim as host, $hostInfo is hosting right now!!!", "You can't host a game! Closing Valheim.", "OK", "Error")
         # If in situation that Valheim has been started despite someone else hosting , kill the process
         Stop-Valheim
         return $false
@@ -226,7 +227,6 @@ $valheimProcess = Get-Process -Name "valheim" -ErrorAction SilentlyContinue
 if ($valheimProcess) {
     if (-not (Test-HostingReservation)) {
         Stop-Valheim
-        $temp = [System.Windows.Forms.MessageBox]::Show("Can't start Valheim as host, $hostInfo is hosting right now!!!", "You can't host a game! Closing Valheim.", "OK", "Error")
         exit 1
     }
     Write-Host "No one else's hosting. You can start a game as host" -ForegroundColor Blue
