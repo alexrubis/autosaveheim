@@ -291,6 +291,6 @@ if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
 Read-Host -Prompt "Script finished. Log created. Press Enter to exit"
-
 # End logging
 Stop-Transcript
+[System.Environment]::Exit(0)
