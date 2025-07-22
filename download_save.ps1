@@ -55,8 +55,9 @@ Copy-Item "$saveName.fwl" -Destination "$backupDir\$saveName`_before_download_$t
 
 # Pull from remote
 & $git pull origin main
-#& $git pull origin main --rebase
-Read-Host -Prompt "Done. Press Enter to exit"
+
+Write-Host "Script finished. Log created."  -ForegroundColor Blue
+Read-Host -Prompt "Press any key to exit"
 
 # End logging
 Stop-Transcript

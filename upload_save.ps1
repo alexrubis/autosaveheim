@@ -58,7 +58,8 @@ Copy-Item "$saveName.fwl" -Destination "$backupDir\$saveName`_before_upload_$tim
 & $git commit -m "Backup by $env:USERNAME on $timestamp"
 & $git push origin main
 
-Read-Host -Prompt "Done. Press Enter to exit"
+Write-Host "Script finished. Log created."  -ForegroundColor Blue
+Read-Host -Prompt "Press any key to exit"
 
 # End logging
 Stop-Transcript
