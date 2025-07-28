@@ -6,6 +6,8 @@ $ErrorActionPreference = "Stop"
 # Start logging
 $logPath = Join-Path $PSScriptRoot "logs\setup_log_$(Get-Date -Format 'yyyy-MM-dd_HH-mm-ss').txt"
 Start-Transcript -Path $logPath -Append
+Add-Type -AssemblyName System.Windows.Forms
+
 Write-Host " ___  _   _  _____   ___   ___  ___ __   __ ___  _  _  ___  ___  __  __ " -ForegroundColor Blue
 Write-Host "/   \| | | ||_   _| / _ \ / __|/   \\ \ / /| __|| || || __||_ _||  \/  |" -ForegroundColor Blue
 Write-Host "| - || |_| |  | |  | (_) |\__ \| - | \   / | _| | __ || _|  | | | |\/| |" -ForegroundColor Blue
@@ -199,28 +201,12 @@ if ($cleanInstall) {
     . "$PSScriptRoot\config.ps1"
 
 
-    # Before initing git repo, backup save files and delete them
+    # Before initing git repo, backup save files
     $backupDir = Join-Path $worldDir "autosaveheim_backups"
     if (-not (Test-Path $backupDir)) {
         New-Item -ItemType Directory -Path $backupDir | Out-Null
     }
 
-    $files = @(
-        "$saveName.fwl",
-        "$saveName.db",
-        "whos_hosting.txt"
-    )
-    # Process each file
-    foreach ($file in $files) {
-        $filePath = Join-Path $worldDir $file
-        if (Test-Path $filePath) {
-            $backupPath = Join-Path $backupDir "setup_backup_$file"
-            if ($file -ne "whos_hosting.txt"){
-                Copy-Item $filePath $backupPath -Force
-            }        
-            Remove-Item $filePath -Force
-        }
-    }
     # Remove existing .git folder
     $dotGitPath = Join-Path $worldDir ".git"
     if (Test-Path $dotGitPath) {
@@ -231,10 +217,10 @@ if ($cleanInstall) {
     $gitignorePath = Join-Path $worldDir ".gitignore"
     $gitignoreContent = 
 @"
-    *
-    !$saveName.fwl
-    !$saveName.db
-    !whos_hosting.txt
+*
+!$saveName.fwl
+!$saveName.db
+!whos_hosting.txt
 "@
 
     Set-Content -Path $gitignorePath -Value $gitignoreContent -Encoding UTF8
@@ -245,19 +231,50 @@ if ($cleanInstall) {
     Write-Host " Initializing Git repository in $worldDir..."
     Write-Host "============DOWNLOADING SAVEFILES==========="
 
-    Push-Location $worldDir
-    & $git init
+    & $git -C $worldDir init
     & $git -C $worldDir config user.name "$ENV:username"
     & $git -C $worldDir config user.email "$gitUserEmail"
     & $git -C $worldDir config credential.helper store
-    & $git remote add origin $remoteUrl
-    & $git branch -M main
-    & $git pull origin main --rebase
+    & $git -C $worldDir remote add origin $remoteUrl
+    & $git -C $worldDir branch -M main
+
+    # Check if main is an empty repo
+    # Check if remote repo is empty
+    $remoteOutput = & $git ls-remote $remoteUrl
+    if ([string]::IsNullOrWhiteSpace($remoteOutput)) {
+        Write-Host "Remote repo is empty. Pushing local save as the first commit..." -ForegroundColor Yellow
+        [System.Windows.Forms.MessageBox]::Show("Remote repo is empty, pushing local save files to it.", "Pushing savefiles to remote", "OK", "Info")
+        Set-Content -Path (Join-Path $worldDir "whos_hosting.txt") -Value '' -Encoding UTF8
+        & $git -C $worldDir add .
+        & $git -C $worldDir commit -m "Initial commit with existing Valheim save files from $ENV:username"
+        & $git -C $worldDir push -u origin main
+    }
+    else {
+        Write-Host "Remote repo has content. Pulling and merging..." -ForegroundColor Green
+
+        $files = @(
+            "$saveName.fwl",
+            "$saveName.db",
+            "whos_hosting.txt"
+        )
+        # Process each file
+        foreach ($file in $files) {
+            $filePath = Join-Path $worldDir $file
+            if (Test-Path $filePath) {
+                $backupPath = Join-Path $backupDir "setup_backup_$file"
+                if ($file -ne "whos_hosting.txt"){
+                    Copy-Item $filePath $backupPath -Force
+                }        
+                Remove-Item $filePath -Force
+            }
+        }
+
+        & $git -C $worldDir pull origin main --rebase
+    }
     if ($LASTEXITCODE -ne 0) {
         Read-Host -Prompt "Git failed with exit code $LASTEXITCODE. Press any key to exit"
         exit $LASTEXITCODE
     }
-    Pop-Location
 }
 
 # === Create Shortcuts ===
